@@ -31,7 +31,7 @@ if [ "${POSTGRES_PASSWORD}" = "**None**" ]; then
   exit 1
 fi
 
-if [ "${GCLOUD_KEYFILE_BASE64}" = "**None**" ]; then
+if [ "${GCLOUD_KEYFILE}" = "**None**" ]; then
   echo -n "You need to set the GCLOUD_KEYFILE_BASE64 environment variable."
   exit 1
 fi
@@ -48,8 +48,7 @@ fi
 
 # Google Cloud Auth
 echo -n "Authenticating to Google Cloud"
-echo -n $GCLOUD_KEYFILE_BASE64 | base64 -d > /key.json
-gcloud auth activate-service-account --key-file /key.json --project "$GCLOUD_PROJECT_ID" -q
+gcloud auth activate-service-account --key-file /etc/google-cloud/credentials.json --project "$GCLOUD_PROJECT_ID" -q
 
 
 # Postgres dumping
@@ -58,6 +57,7 @@ FILENAME="${DATE}.dump"
 export PGPASSWORD=$POSTGRES_PASSWORD
 POSTGRES_HOST_OPTS="-h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER $POSTGRES_EXTRA_OPTS"
 
-echo -n "Uploading pg_dump to $GCS_BACKUP_BUCKET"
-pg_dump $POSTGRES_HOST_OPTS -Fc $POSTGRES_DATABASE | gsutil cp - $GCS_BACKUP_BUCKET/$FILENAME
-echo -n "SQL backup uploaded successfully"
+echo ""
+echo  "Uploading pg_dump to $GCS_BACKUP_BUCKET/$GCS_BACKUP_KEY_PREFIX$FILENAME"
+pg_dump $POSTGRES_HOST_OPTS -Fc $POSTGRES_DATABASE | gsutil cp - gs://$GCS_BACKUP_BUCKET/$GCS_BACKUP_KEY_PREFIX$FILENAME
+echo "SQL backup uploaded successfully"
